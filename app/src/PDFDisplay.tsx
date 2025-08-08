@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 
 import PDFDocument from "./component/PDFDocument.tsx";
-import PDFDocument2 from "./component/PDFDocument2.tsx";
 
 const PDFDisplay = () => {
 	const [viewData, setViewData] = useState <any | null> (null);
@@ -21,7 +20,7 @@ const PDFDisplay = () => {
 
 	return (
 		<div className="w-full h-screen">
-			<PDFDocument2 viewData={memoizedViewData} />
+			<PDFDocument viewData={memoizedViewData} />
 		</div>
 	);
 };

@@ -173,15 +173,78 @@ textarea {
 
     &:hover ,
     &.active {
-        @apply bg-yellow-50 shadow opacity-100;
+        @apply bg-yellow-200/20 shadow opacity-100 border border-solid border-red-300/80;
     }
 }
 
 .interaction-item {
-    @apply transition-all duration-150 ease-in-out p-0;
+    @apply relative w-full transition-all duration-150 ease-in-out text-left scale-100;
 
+    &:focus,
     &:hover,
     &.active {
-        @apply bg-yellow-50 p-5 font-bold;
+        @apply bg-yellow-200/20 px-5 font-bold scale-[1.05];
     }
+
+    &.page_header,
+    &.section_header,
+    &.text {
+        @apply flex w-1/2;
+    }
+}
+
+.custom-pdf-page {
+    .react-pdf__Page__textContent,
+    .react-pdf__Page__annotations,
+    canvas {
+        @apply sm:!w-full sm:max-w-[72%] max-w-[100%];
+        height: calc(100% / 0.77) !important;
+    }
+}
+
+table {
+    @apply px-0;
+    thead {
+        th {
+            @apply bg-red-400 text-white;
+        }
+    }
+    tbody {
+        tr {
+            &:first-of-type {
+                @apply bg-gray-100;
+            }
+        }
+    }
+}
+
+.page_header {
+    @apply text-xl font-bold;
+}
+
+.section_header {
+    @apply text-lg font-medium pt-4 pb-2 list-disc;
+    span {
+        @apply flex items-center bg-red-400 text-white font-bold rounded-2xl px-2 py-1;
+    }
+}
+
+#texts13 {
+    @apply w-full;
+}
+
+#texts29, #texts30, #texts31, #texts32, #texts33, #texts34, #texts35,
+#texts36, #texts37, #texts38, #texts39, #texts40, #texts42, #texts43,
+#texts44, #texts45, #texts46, #texts47, #texts48, #texts49, #texts50,
+#texts52, #texts53, #texts57, #texts58, #texts59, #texts60, #texts63,
+#texts64, #texts65, #texts66, #texts67, #texts68,
+#texts57, #texts58, #texts59, #texts60, #texts63, #texts64, #texts65, #texts66,
+#texts67, #texts68, #texts69, #texts70, #texts72, #texts73, #texts74, #texts75,
+#texts76, #texts77, #texts78, #texts79, #texts80, #texts82, #texts83, #texts84,
+#texts85, #texts86, #texts87, #texts88, #texts89, #texts90 {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0;
+}
+
+#pictures1, #pictures2 {
+    @apply relative z-1;
 }

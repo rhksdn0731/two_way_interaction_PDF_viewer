@@ -1,69 +1,125 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import {
-	PDFViewer,
-	Page,
-	Text,
-	View,
-	Document,
-	Font,
-	Image
-} from '@react-pdf/renderer';
-import { createTw } from 'react-pdf-tailwind';
+import React, { useState, useEffect } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
-Font.register({
-	family: 'NanumMyeongjo',
-	fonts: [
-		{
-			src: '/assets/font/NanumMyeongjo.ttf',
-			fontWeight: 'normal',
-		},
-		{
-			src: '/assets/font/NanumMyeongjoExtraBold.ttf',
-			fontWeight: '800',
-		},
-	],
-});
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('/assets/pdf.worker.min.js', import.meta.url).toString();
 
-Font.register({
-	family: 'Pretendard',
-	src: '/assets/font/PretendardVariable.ttf',
-});
+interface BBox {
+	l: number;
+	t: number;
+	r: number;
+	b: number;
+	coord_origin: string;
+}
 
-const head = createTw({
-	theme: {
-		fontFamily: {
-			sans: ['Pretendard'],
-		},
-		extend: {
-			colors: {
-				custom: '#bada55',
-			},
-		},
-	},
-});
+interface TextItem {
+	self_ref: string;
+	parent: { $ref: string };
+	children: any[];
+	content_layer: string;
+	label: string;
+	prov: Array<{
+		page_no: number;
+		bbox: BBox;
+		charspan: [number, number];
+	}>;
+	orig: string;
+	text: string;
+}
 
-const content = createTw({
-	theme: {
-		fontFamily: {
-			sans: ['NanumMyeongjo'],
-		},
-		extend: {
-			colors: {
-				custom: '#bada55',
-			},
-		},
-	},
-});
+interface PictureItem {
+	self_ref: string;
+	parent: { $ref: string };
+	children: Array<{ $ref: string }>;
+	content_layer: string;
+	label: string;
+	prov: Array<{
+		page_no: number;
+		bbox: BBox;
+		charspan: [number, number];
+	}>;
+	captions: any[];
+	references: any[];
+	footnotes: any[];
+	image: {
+		mimetype: string;
+		dpi: number;
+		size: {
+			width: number;
+			height: number;
+		};
+		uri: string;
+	};
+	annotations: any[];
+}
 
-const PDFDocument = React.memo(({ viewData }: { viewData: any }) => {
-	if (viewData !== null) {
-		console.log(viewData);
-		console.log(viewData.pictures[0]);
-	}
+interface GroupItem {
+	self_ref: string;
+	parent: { $ref: string };
+	children: Array<{ $ref: string }>;
+	content_layer: string;
+	name: string;
+	label: string;
+}
+
+interface TableCell {
+		bbox: BBox;
+		row_span: number;
+		col_span: number;
+		start_row_offset_idx: number;
+		end_row_offset_idx: number;
+		start_col_offset_idx: number;
+		end_col_offset_idx: number;
+		text: string;
+		column_header: boolean;
+		row_header: boolean;
+		row_section: boolean;
+}
+
+interface TableItem {
+	self_ref: string;
+	parent: { $ref: string };
+	children: any[];
+	content_layer: string;
+	label: string;
+	prov: Array<{
+		page_no: number;
+		bbox: BBox;
+		charspan: [number, number];
+	}>;
+	captions: any[];
+	references: any[];
+	footnotes: any[];
+	data: {
+		table_cells: TableCell[];
+		num_rows: number;
+		num_cols: number;
+		grid: TableCell[];
+	};
+}
+
+interface BodyItem {
+	self_ref: string;
+	children: Array<{ $ref: string }>;
+	content_layer: string;
+	name: string;
+	label: string;
+}
+
+interface ViewData {
+	body: BodyItem;
+	groups: GroupItem[];
+	texts: TextItem[];
+	pictures: PictureItem[];
+	tables: TableItem[];
+}
+
+const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) => {
+	const [pageNumber, setPageNumber] = useState(1);
 	const [selectedId, setSelectedId] = useState<string>(null);
 
-	const scrollToTextBox = (id) => {
-		console.log(id);
+	const scrollToBox = (id) => {
 		const target = document.getElementById(id);
 		if (!target) return;
 		target.scrollIntoView({
@@ -72,300 +128,276 @@ const PDFDocument = React.memo(({ viewData }: { viewData: any }) => {
 		});
 	};
 
-	const MemoizedPDF = useMemo(() => (
-		<PDFViewer style={head("w-full h-screen font-sans")}>
-			<Document>
-				<Page size="A4">
-					{viewData.body.children.map((childrenItem, idx) => (
-						<View key={`childrenItem-${idx}`}>
+	const prependTextToTable = (targetId:string, appendTargetId:string)=> {
+		const target = document.getElementById(targetId);
+		const prependTarget = document.getElementById(appendTargetId);
 
-							{viewData.pictures
-								.filter(picturesItem => picturesItem.self_ref === childrenItem['$ref'])
-								.map((picturesItem, idx) => (
-									<Image key={`txt-${idx}`} src={picturesItem.image.uri}></Image>
-								))}
+		if (target && prependTarget) {
+			target.prepend(prependTarget);
+		}
+	}
 
-							{viewData.pictures
-								.filter(picturesItem => picturesItem['self_ref'] === childrenItem['$ref'])
-								.map((picturesItem, idx) => {
-										return (
-											<img
-												key={`picturesItem${idx}`}
-												id={picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]}
-												className={`interaction-item ${selectedId !== null && selectedId === (picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]) ? 'selectedId !== null && selectedId ===' : ''}`}
-												onClick={() => scrollToTextBox(`pdf${picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]}`)}
-												onMouseEnter={() => setSelectedId(`pdf${picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]}`)}
-												onMouseLeave={() => setSelectedId(null)}
-												src={picturesItem.image.uri}
-												alt=""
-											/>
-										)
-									}
-								)}
+	const prependButtonsToPictures = (buttonList, targetId) => {
+		const target = document.getElementById(targetId);
 
-							{viewData.texts
-								.filter(t => t.parent?.['$ref'] === childrenItem['$ref'])
-								.filter(t => !t.parent?.['$ref'].includes('pictures') && !t.parent?.['$ref'].includes('table'))
-								.map((t, idx2) => (
-									<Text key={`p-${idx2}`} style={content("font-sans")}>{t.text}</Text>
-								))}
+		if (!target) {
+			console.error('#pictures1 요소를 찾을 수 없습니다.');
+			return;
+		}
 
-							{viewData.tables
-								.filter(table => table.self_ref === childrenItem['$ref'])
-								.map((tableItem, tidx) => (
-									<View key={`table-${tidx}`}>
-										{/* Header */}
-										<View>
-											<View>
-												{tableItem.data.grid[0].map((cell, cIdx, arr) => {
-													if (!cell || cell.row_span === 0 || cell.text === "") return null;
-													if (cIdx > 0 &&
-														cell.text === arr[cIdx - 1]?.text &&
-														(cell.row_span ?? 1) === 1 &&
-														(arr[cIdx - 1]?.row_span ?? 1) === 1
-													) return null;
+		// 각 버튼을 #pictures1 요소에 prepend
+		buttonList.forEach(id => {
+			const buttonId = document.getElementById(id);
+			if (buttonId ) {
+				target.prepend(buttonId); // #pictures1 요소에 버튼을 prepend
+			}
+		});
+	}
 
-													return (
-														<Text key={`th-${cIdx}`} style={head("font-sans")}>{cell.text}</Text>
-													);
-												})}
-											</View>
-										</View>
-										{/* Body */}
-										<View>
-											{(() => {
-												const rendered = new Set<string>();
+	const buttonList1 = [
+		'texts29', 'texts30', 'texts31', 'texts32', 'texts33', 'texts34', 'texts35',
+		'texts36', 'texts37', 'texts38', 'texts39', 'texts40', 'texts42', 'texts43',
+		'texts44', 'texts45', 'texts46', 'texts47', 'texts48', 'texts49', 'texts50',
+		'texts52', 'texts53', 'texts57', 'texts58', 'texts59', 'texts60', 'texts63',
+		'texts64', 'texts65', 'texts66', 'texts67', 'texts68', 'pictures1'
+	];
 
-												return tableItem.data.grid
-													.filter((_, idx) => idx > 0)
-													.map((row, rowIdx) => {
-														const rowCells = [];
-														for (let colIdx = 0; colIdx < row.length; colIdx++) {
-															const cell = row[colIdx];
-															if (!cell) continue;
-															const key = `${rowIdx}-${colIdx}`;
-															if (rendered.has(key)) continue;
+	const buttonList2 = [
+		'texts57', 'texts58', 'texts59', 'texts60', 'texts63', 'texts64', 'texts65', 'texts66',
+		'texts67', 'texts68', 'texts69', 'texts70', 'texts72', 'texts73', 'texts74', 'texts75',
+		'texts76', 'texts77', 'texts78', 'texts79', 'texts80', 'texts82', 'texts83', 'texts84',
+		'texts85', 'texts86', 'texts87', 'texts88', 'texts89', 'texts90', 'pictures2'
+	];
 
-															const colSpan = cell.col_span ?? 1;
-															const rowSpan = cell.row_span ?? 1;
-
-															for (let r = rowIdx; r < rowIdx + rowSpan; r++) {
-																for (let c = colIdx; c < colIdx + colSpan; c++) {
-																	rendered.add(`${r}-${c}`);
-																}
-															}
-
-															rowCells.push(
-																<View key={`cell-${rowIdx}-${colIdx}`} style={head("p-2")}>
-																	<Text style={head("font-sans")}>{cell.text}</Text>
-																</View>
-															);
-														}
-
-														return (
-															<Text key={`row-${rowIdx}`} style={head("font-sans")}>
-																{rowCells}
-															</Text>
-														);
-													});
-											})()}
-										</View>
-									</View>
-								))}
-						</View>
-					))}
-				</Page>
-			</Document>
-		</PDFViewer>
-	), [JSON.stringify(viewData)]);
+	useEffect(() => {
+		prependTextToTable( 'texts23','tables0');
+		prependTextToTable('texts26','tables1');
+		prependTextToTable('texts55','picWrap1');
+		prependTextToTable('texts91','picWrap2');
+		prependButtonsToPictures(buttonList1,'picWrap1');
+		prependButtonsToPictures(buttonList2,'picWrap2');
+	}, []);
 
 	return (
-		<section className='flex'>
-			<article className="relative w-1/2">
-				{viewData.texts
-					.map((textsItem, idx) => {
-						const bbox = textsItem.prov[0].bbox;
-						const { l, b, r, t, coord_origin } = bbox;
-						const width = r - l;
+		<section className="flex p-10 flex-col sm:flex-row">
+			<article className="relative w-full sm:w-1/2">
+				<div className="w-full">
+					<Document
+						file="/assets/report_1.pdf"
+					>
+						<Page
+							pageNumber={pageNumber}
+							className="custom-pdf-page"
+						/>
+					</Document>
+				</div>
+
+				<div id='picWrap1'></div>
+				<div id='picWrap2'></div>
+
+				<article className="absolute -top-24 left-0 flex flex-col w-full h-screen">
+					{viewData.texts.map((textsItem, idx) => {
+						if (!textsItem?.prov?.[0]?.bbox) return null;
+
+						const {l, r, t, b, coord_origin} = textsItem.prov[0].bbox;
+						const width = Math.abs(r - l);
+						const height = Math.abs(t - b);
+						const textsItemId = textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2];
 
 						const style =
-							coord_origin === 'TOPLEFT'
+							coord_origin === "BOTTOMLEFT"
 								? {
-									top: `${t}px`,
 									left: `${l}px`,
-
-									height: `${Math.abs(b - t)}px`,
-									position: 'absolute',
+									bottom: `${b}px`,
+									width: `${width}px`,
+									height: `${height}px`,
 								}
 								: {
-									bottom: `${b}px`,
 									left: `${l}px`,
+									top: `${t}px`,
 									width: `${width}px`,
-									height: `${Math.abs(t - b)}px`,
-									position: 'absolute',
+									height: `${height}px`,
 								};
-
-						const getId = 'pdf' + textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2];
 
 						return (
 							<button
-								key={textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]}
-								id={`pdf${textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]}`}
+								key={textsItemId}
+								type='button'
+								id={`${textsItemId}pdf`}
 								style={style}
-								className={`interaction-nav-btn ${selectedId !== null && selectedId === getId ? 'active' : ''}`}
-								onClick={() => scrollToTextBox(textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2])}
-								onMouseEnter={() => setSelectedId(textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2])}
+								className={
+									`absolute interaction-nav-btn !text-xs white-pre text-left z-4 !p-2
+										${selectedId !== null && `${selectedId}pdf` === `${textsItemId}pdf` ? 'active' : ''}`
+								}
+								onClick={() => scrollToBox(`${textsItemId}`)}
+								onMouseEnter={() => setSelectedId(`${textsItemId}`)}
 								onMouseLeave={() => setSelectedId(null)}
-							>
-								{textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]}
-							</button>
+							></button>
 						);
 					})}
-				{MemoizedPDF}
+				</article>
 			</article>
-			<article
-				className="flex flex-col w-1/2 h-screen gap-2 px-6 p-4 overflow-y-scroll">
-				{viewData.body.children.map((childrenItem, idx) => (
-						<div
-							key={`childrenItem${idx}`}
-							id={childrenItem['$ref'].split('/')[1] + childrenItem['$ref'].split('/')[2]}
-							className="flex flex-col gap-4"
-						>
-							{viewData.pictures
-								.filter(picturesItem => picturesItem['self_ref'] === childrenItem['$ref'])
-								.map((picturesItem, idx) => {
-										return (
-											<img
-												key={`picturesItem${idx}`}
-												id={picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]}
-												className={`interaction-item ${selectedId !== null && selectedId === (picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]) ? 'selectedId !== null && selectedId ===' : ''}`}
-												onClick={() => scrollToTextBox(`pdf${picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]}`)}
-												onMouseEnter={() => setSelectedId(`pdf${picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2]}`)}
-												onMouseLeave={() => setSelectedId(null)}
-												src={picturesItem.image.uri}
-												alt=""
-											/>
-										)
-									}
-								)}
 
-							{viewData.texts
-								.filter(textsItem => textsItem.parent?.['$ref'] === childrenItem['$ref'])
-								.filter(textsItem => !textsItem.parent?.['$ref'].includes('pictures'))
-								.filter(textsItem => !textsItem.parent?.['$ref'].includes('table'))
-								.map((textsItem, idx) => {
-										return (
-											<button
-												type="button"
-												key={`${textsItem['self_ref'].split('/')[2]}${idx}`}
-												id={textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]}
-												className={`interaction-item ${selectedId !== null && selectedId === (textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]) ? 'selectedId !== null && selectedId ===' : ''}`}
-												onClick={() => scrollToTextBox(`pdf${textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]}`)}
-												onMouseEnter={() => setSelectedId(`pdf${textsItem['self_ref'].split('/')[1] + textsItem['self_ref'].split('/')[2]}`)}
-												onMouseLeave={() => setSelectedId(null)}
-											>
-												{textsItem['text']}
-											</button>
-										)
-									}
-								)}
+			<article className="flex flex-wrap w-full sm:w-1/2 px-6 p-4">
+					{viewData.texts
+					.filter((textsItem, idx) => !(idx >= 10 && textsItem.parent?.["$ref"].includes("pictures")))
+					.map((textsItem, idx) => {
+							const textsItemId = `${textsItem["self_ref"].split("/")[1] + textsItem["self_ref"].split("/")[2]}`;
 
-							{viewData.tables
-								.filter(tableItem => tableItem['self_ref'] === childrenItem['$ref'])
-								.map((tableItem, idx) => {
-										return (
-											<table
-												key={`tableItem${idx}`}
-												id={tableItem['self_ref'].split('/')[1] + tableItem['self_ref'].split('/')[2]}
-												className={`interaction-item ${selectedId !== null && selectedId === (tableItem['self_ref'].split('/')[1] + tableItem['self_ref'].split('/')[2]) ? 'selectedId !== null && selectedId ===' : ''}`}
-												onClick={() => scrollToTextBox(`pdf${tableItem['self_ref'].split('/')[1] + tableItem['self_ref'].split('/')[2]}`)}
-												onMouseEnter={() => setSelectedId(`pdf${tableItem['self_ref'].split('/')[1] + tableItem['self_ref'].split('/')[2]}`)}
-												onMouseLeave={() => setSelectedId(null)}
-											>
-												<thead>
-												<tr>
-													{tableItem['data'].grid[0].map((cell, idx, arr) => {
-														// 병합 처리로 생략된 셀은 건너뜀
-														if (!cell || cell.row_span === 0 || cell.text === "") return null;
+							return (
+								<button
+									type="button"
+									key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
+									id={textsItemId}
+									className={`relative interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
+									onClick={() => scrollToBox(`${textsItemId}pdf`)}
+									onMouseEnter={() => setSelectedId(textsItemId)}
+									onMouseLeave={() => setSelectedId(null)}
+								>
+									<span>{textsItem["text"]}</span>
+								</button>
+							)
+						}
+					)}
 
-														// 앞 셀과 텍스트가 같고 row_span이 1이라면 중복으로 간주하고 생략
-														if (
-															idx > 0 &&
-															cell.text === arr[idx - 1]?.text &&
-															(cell.row_span ?? 1) === 1 &&
-															(arr[idx - 1]?.row_span ?? 1) === 1
-														) {
-															return null;
+				{viewData.pictures
+					.filter((picturesItem, idx) => idx > 0)
+					.map((picturesItem, idx) => {
+							const picturesId = picturesItem['self_ref'].split('/')[1] + picturesItem['self_ref'].split('/')[2];
+							const selectedPictureId = picturesId === 'pictures1' ? 'texts27' : 'texts56';
+
+							return (
+								<img
+									key={`picturesItem${idx}`}
+									id={picturesId}
+									className={`interaction-item ${selectedId !== null && selectedId === picturesId ? 'selectedId !== null && selectedId ===' : ''}`}
+									onClick={() => scrollToBox( `${selectedPictureId}pdf` )}
+									onMouseEnter={() => setSelectedId( selectedPictureId )}
+									onMouseLeave={() => setSelectedId(null)}
+									src={picturesItem.image.uri}
+								/>
+							)
+						}
+					)}
+
+					{viewData.texts
+						.filter(textsItem => !textsItem?.["self_ref"].includes("1"))
+						.filter(textsItem => !textsItem?.["self_ref"].includes("28"))
+						.filter(textsItem => !textsItem?.["self_ref"].includes("62"))
+						.filter(textsItem => !textsItem?.parent["$ref"].includes("body"))
+						.filter(textsItem => !textsItem?.parent["$ref"].includes("groups"))
+						.map((textsItem, idx) => {
+								const textsItemId = `${textsItem["self_ref"].split("/")[1] + textsItem["self_ref"].split("/")[2]}`;
+
+								return (
+									<button
+										type="button"
+										key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
+										id={textsItemId}
+										className={`interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
+										onClick={() => scrollToBox(`${textsItemId}pdf`)}
+										onMouseEnter={() => setSelectedId(textsItemId)}
+										onMouseLeave={() => setSelectedId(null)}
+									>
+										{textsItem["text"]}
+									</button>
+								)
+							}
+						)}
+
+					{viewData.tables
+						.map((tableItem, idx) => {
+								const tableItemId = `${tableItem["self_ref"].split("/")[1] + tableItem["self_ref"].split("/")[2]}`;
+								const selectedTableItemId = tableItemId === 'tables0' ? 'texts21' : 'texts24';
+
+								return (
+									<table
+										key={`tableItem${idx}`}
+										id={tableItemId}
+										className={`interaction-item ${selectedId !== null && selectedId === tableItemId ? "active" : ""}`}
+										onClick={() => scrollToBox(`${selectedTableItemId}pdf` )}
+										onMouseEnter={() => setSelectedId( selectedTableItemId )}
+										onMouseLeave={() => setSelectedId(null)}
+									>
+										<thead>
+										<tr>
+											{tableItem["data"].grid[0].map((cell, idx, arr) => {
+												if (!cell || cell.row_span === 0 || cell.text === "") return null;
+
+												if (
+													idx > 0 &&
+													cell.text === arr[idx - 1]?.text &&
+													(cell.row_span ?? 1) === 1 &&
+													(arr[idx - 1]?.row_span ?? 1) === 1
+												) {
+													return null;
+												}
+
+												return (
+													<th
+														key={`th-${idx}`}
+														rowSpan={cell.row_span > 1 ? cell.row_span : undefined}
+														colSpan={cell.col_span > 1 ? cell.col_span : undefined}
+														className={`text-center ${cell?.column_header ? "column-header" : ""}`}
+													>
+														{cell.text}
+													</th>
+												);
+											})}
+										</tr>
+										</thead>
+										<tbody>
+										{(() => {
+											const rendered = new Set<string>();
+
+											return tableItem["data"].grid
+												.filter((_, idx) => idx > 0)
+												.map((gridItem, rowIdx) => {
+													const rowCells = [];
+
+													for (let colIdx = 0; colIdx < gridItem.length; colIdx++) {
+														const cell = gridItem[colIdx];
+														if (!cell) continue;
+
+														const cellKey = `${rowIdx}-${colIdx}`;
+														if (rendered.has(cellKey)) continue;
+
+														const colSpan = cell.col_span ?? 1;
+														const rowSpan = cell.row_span ?? 1;
+
+														for (let r = rowIdx; r < rowIdx + rowSpan; r++) {
+															for (let c = colIdx; c < colIdx + colSpan; c++) {
+																rendered.add(`${r}-${c}`);
+															}
 														}
 
-														return (
-															<th
-																key={`th-${idx}`}
-																rowSpan={cell.row_span > 1 ? cell.row_span : undefined}
-																colSpan={cell.col_span > 1 ? cell.col_span : undefined}
-																className={`text-center ${cell?.column_header ? "column-header" : ""}`}
+														rowCells.push(
+															<td
+																key={`cell-${rowIdx}-${colIdx}`}
+																className={cell?.row_header ? "row-header" : ""}
+																colSpan={colSpan > 1 ? colSpan : undefined}
+																rowSpan={rowSpan > 1 ? rowSpan : undefined}
 															>
 																{cell.text}
-															</th>
+															</td>
 														);
-													})}
-												</tr>
-												</thead>
-												<tbody>
-												{(() => {
-													const rendered = new Set<string>(); // ✅ tbody 전체에서 재사용
+													}
 
-													return tableItem['data'].grid
-														.filter((_, idx) => idx > 0)
-														.map((gridItem, rowIdx) => {
-															const rowCells = [];
-
-															for (let colIdx = 0; colIdx < gridItem.length; colIdx++) {
-																const cell = gridItem[colIdx];
-																if (!cell) continue;
-
-																const cellKey = `${rowIdx}-${colIdx}`;
-																if (rendered.has(cellKey)) continue;
-
-																const colSpan = cell.col_span ?? 1;
-																const rowSpan = cell.row_span ?? 1;
-
-																for (let r = rowIdx; r < rowIdx + rowSpan; r++) {
-																	for (let c = colIdx; c < colIdx + colSpan; c++) {
-																		rendered.add(`${r}-${c}`);
-																	}
-																}
-
-																rowCells.push(
-																	<td
-																		key={`cell-${rowIdx}-${colIdx}`}
-																		className={cell?.row_header ? 'row-header' : ''}
-																		colSpan={colSpan > 1 ? colSpan : undefined}
-																		rowSpan={rowSpan > 1 ? rowSpan : undefined}
-																	>
-																		{cell.text}
-																	</td>
-																);
-															}
-
-															return (
-																<tr
-																	key={`row-${rowIdx}`}
-																	className='text-right'
-																>
-																	{rowCells}
-																</tr>
-															);
-														});
-												})()}
-												</tbody>
-											</table>
-										)
-									}
-								)}
-						</div>
-					)
-				)}
+													return (
+														<tr
+															key={`row-${rowIdx}`}
+															className="text-right"
+														>
+															{rowCells}
+														</tr>
+													);
+												});
+										})()}
+										</tbody>
+									</table>
+								)
+							}
+						)}
 			</article>
 		</section>
 	);

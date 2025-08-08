@@ -202,11 +202,15 @@ textarea {
     }
 }
 
+#texts1 {
+    @apply text-5xl font-bold text-beachu-500 text-left;
+}
+
 table {
     @apply px-0;
     thead {
         th {
-            @apply bg-red-400 text-white;
+            @apply bg-beachu-500 text-white;
         }
     }
     tbody {
@@ -225,7 +229,7 @@ table {
 .section_header {
     @apply text-lg font-medium pt-4 pb-2 list-disc;
     span {
-        @apply flex items-center bg-red-400 text-white font-bold rounded-2xl px-2 py-1;
+        @apply flex items-center bg-beachu-500 text-white font-bold rounded-2xl px-2 py-1;
     }
 }
 

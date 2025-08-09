@@ -250,3 +250,8 @@ table {
 #pictures1, #pictures2 {
     @apply relative z-1;
 }
+
+#texts22,
+#texts25 {
+    @apply flex justify-end;
+}

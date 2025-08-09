@@ -239,10 +239,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 								type='button'
 								id={`${textsItemId}pdf`}
 								style={style}
-								className={
-									`absolute interaction-nav-btn !text-xs white-pre text-left z-4 !p-2
-										${selectedId !== null && `${selectedId}pdf` === `${textsItemId}pdf` ? 'active' : ''}`
-								}
+								className="absolute interaction-nav-btn !text-xs white-pre text-left z-4 !p-2"
 								onClick={() => scrollToTextBox(`${textsItemId}`)}
 								onMouseEnter={() => onEnterPair(`${`${textsItemId}`}`)}
 								onMouseLeave={() => onLeavePair(`${`${textsItemId}`}`)}
@@ -264,7 +261,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									ref={(el) => (elRefs.current[textsItemId] = el)}
 									type="button"
 									id={textsItemId}
-									className={`relative interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
+									className="relative interaction-item py-1"
 									onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
 									onMouseEnter={() => onEnterPair(textsItemId)}
 									onMouseLeave={() => onLeavePair(textsItemId)}
@@ -286,7 +283,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									key={`picturesItem${idx}`}
 									ref={(el) => (elRefs.current[picturesItem] = el)}
 									id={picturesId}
-									className={`interaction-item ${selectedId !== null && selectedId === picturesId ? 'selectedId !== null && selectedId ===' : ''}`}
+									className="interaction-item"
 									onClick={() => scrollToTextBox(`${selectedPictureId}pdf`)}
 									onMouseEnter={() => onEnterPair(selectedPictureId)}
 									onMouseLeave={() => onLeavePair(selectedPictureId)}
@@ -311,7 +308,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									ref={(el) => (elRefs.current[textsItemId] = el)}
 									type="button"
 									id={textsItemId}
-									className={`interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
+									className={`interaction-item py-1 ${textsItem['label']}`}
 									onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
 									onMouseEnter={() => onEnterPair(textsItemId)}
 									onMouseLeave={() => onLeavePair(textsItemId)}
@@ -332,7 +329,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									key={`tableItem${idx}`}
 									ref={(el) => (elRefs.current[tableItem] = el)}
 									id={tableItemId}
-									className={`interaction-item ${selectedId !== null && selectedId === tableItemId ? "active" : ""}`}
+									className="interaction-item"
 									onClick={() => scrollToTextBox(`${selectedTableItemId}pdf`)}
 									onMouseEnter={() => onEnterPair(selectedTableItemId)}
 									onMouseLeave={() => onLeavePair(selectedTableItemId)}

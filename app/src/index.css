@@ -171,7 +171,6 @@ textarea {
     @apply absolute z-20 text-xs px-2 py-0.5 border transition border-0 rounded-lg opacity-0;
     @apply transition-all duration-150 ease-in-out;
 
-    &:hover ,
     &.active {
         @apply bg-yellow-200/20 shadow opacity-100 border border-solid border-red-300/80;
     }
@@ -181,7 +180,6 @@ textarea {
     @apply relative w-full transition-all duration-150 ease-in-out text-left scale-100;
 
     &:focus,
-    &:hover,
     &.active {
         @apply bg-yellow-200/20 px-5 font-bold scale-[1.05];
     }

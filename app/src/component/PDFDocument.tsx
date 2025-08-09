@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -64,17 +64,17 @@ interface GroupItem {
 }
 
 interface TableCell {
-		bbox: BBox;
-		row_span: number;
-		col_span: number;
-		start_row_offset_idx: number;
-		end_row_offset_idx: number;
-		start_col_offset_idx: number;
-		end_col_offset_idx: number;
-		text: string;
-		column_header: boolean;
-		row_header: boolean;
-		row_section: boolean;
+	bbox: BBox;
+	row_span: number;
+	col_span: number;
+	start_row_offset_idx: number;
+	end_row_offset_idx: number;
+	start_col_offset_idx: number;
+	end_col_offset_idx: number;
+	text: string;
+	column_header: boolean;
+	row_header: boolean;
+	row_section: boolean;
 }
 
 interface TableItem {
@@ -153,6 +153,19 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 		});
 	}
 
+	const elRefs = useRef<Record<string, HTMLElement | null>>({});
+	const addActive = (id?: string) => elRefs.current[id]?.classList.add("active");
+	const removeActive = (id?: string) => elRefs.current[id]?.classList.remove("active");
+
+	const onEnterPair = (id: string) => {
+		addActive(id);
+		addActive(`${id}pdf`);
+	};
+	const onLeavePair = (id: string) => {
+		removeActive(id);
+		removeActive(`${id}pdf`);
+	};
+
 	const buttonList1: string[] = [
 		'texts29', 'texts30', 'texts31', 'texts32', 'texts33', 'texts34', 'texts35',
 		'texts36', 'texts37', 'texts38', 'texts39', 'texts40', 'texts42', 'texts43',
@@ -194,7 +207,8 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 				<div id='picWrap1'></div>
 				<div id='picWrap2'></div>
 
-				<article className="absolute -top-24 left-0 flex flex-col w-full h-screen">
+				<article
+					className="absolute -top-24 left-0 flex flex-col w-full h-screen">
 					{viewData.texts.map((textsItem, idx) => {
 						if (!textsItem?.prov?.[0]?.bbox) return null;
 
@@ -221,6 +235,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 						return (
 							<button
 								key={textsItemId}
+								ref={(el) => (elRefs.current[`${textsItemId}pdf`] = el)}
 								type='button'
 								id={`${textsItemId}pdf`}
 								style={style}
@@ -229,8 +244,8 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 										${selectedId !== null && `${selectedId}pdf` === `${textsItemId}pdf` ? 'active' : ''}`
 								}
 								onClick={() => scrollToTextBox(`${textsItemId}`)}
-								onMouseEnter={() => setSelectedId(`${textsItemId}`)}
-								onMouseLeave={() => setSelectedId(null)}
+								onMouseEnter={() => onEnterPair(`${`${textsItemId}`}`)}
+								onMouseLeave={() => onLeavePair(`${`${textsItemId}`}`)}
 							></button>
 						);
 					})}
@@ -238,20 +253,21 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 			</article>
 
 			<article className="flex flex-wrap w-full sm:w-1/2 px-6 p-4">
-					{viewData.texts
+				{viewData.texts
 					.filter((textsItem, idx) => !(idx >= 10 && textsItem.parent?.["$ref"].includes("pictures")))
 					.map((textsItem, idx) => {
 							const textsItemId = `${textsItem["self_ref"].split("/")[1] + textsItem["self_ref"].split("/")[2]}`;
 
 							return (
 								<button
-									type="button"
 									key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
+									ref={(el) => (elRefs.current[textsItemId] = el)}
+									type="button"
 									id={textsItemId}
 									className={`relative interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
 									onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
-									onMouseEnter={() => setSelectedId(textsItemId)}
-									onMouseLeave={() => setSelectedId(null)}
+									onMouseEnter={() => onEnterPair(textsItemId)}
+									onMouseLeave={() => onLeavePair(textsItemId)}
 								>
 									<span>{textsItem["text"]}</span>
 								</button>
@@ -268,135 +284,138 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 							return (
 								<img
 									key={`picturesItem${idx}`}
+									ref={(el) => (elRefs.current[picturesItem] = el)}
 									id={picturesId}
 									className={`interaction-item ${selectedId !== null && selectedId === picturesId ? 'selectedId !== null && selectedId ===' : ''}`}
-									onClick={() => scrollToTextBox( `${selectedPictureId}pdf` )}
-									onMouseEnter={() => setSelectedId( selectedPictureId )}
-									onMouseLeave={() => setSelectedId(null)}
+									onClick={() => scrollToTextBox(`${selectedPictureId}pdf`)}
+									onMouseEnter={() => onEnterPair(selectedPictureId)}
+									onMouseLeave={() => onLeavePair(selectedPictureId)}
 									src={picturesItem.image.uri}
 								/>
 							)
 						}
 					)}
 
-					{viewData.texts
-						.filter(textsItem => !textsItem?.["self_ref"].includes("1"))
-						.filter(textsItem => !textsItem?.["self_ref"].includes("28"))
-						.filter(textsItem => !textsItem?.["self_ref"].includes("62"))
-						.filter(textsItem => !textsItem?.parent["$ref"].includes("body"))
-						.filter(textsItem => !textsItem?.parent["$ref"].includes("groups"))
-						.map((textsItem, idx) => {
-								const textsItemId = `${textsItem["self_ref"].split("/")[1] + textsItem["self_ref"].split("/")[2]}`;
+				{viewData.texts
+					.filter(textsItem => !textsItem?.["self_ref"].includes("1"))
+					.filter(textsItem => !textsItem?.["self_ref"].includes("28"))
+					.filter(textsItem => !textsItem?.["self_ref"].includes("62"))
+					.filter(textsItem => !textsItem?.parent["$ref"].includes("body"))
+					.filter(textsItem => !textsItem?.parent["$ref"].includes("groups"))
+					.map((textsItem, idx) => {
+							const textsItemId = `${textsItem["self_ref"].split("/")[1] + textsItem["self_ref"].split("/")[2]}`;
 
-								return (
-									<button
-										type="button"
-										key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
-										id={textsItemId}
-										className={`interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
-										onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
-										onMouseEnter={() => setSelectedId(textsItemId)}
-										onMouseLeave={() => setSelectedId(null)}
-									>
-										{textsItem["text"]}
-									</button>
-								)
-							}
-						)}
+							return (
+								<button
+									key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
+									ref={(el) => (elRefs.current[textsItemId] = el)}
+									type="button"
+									id={textsItemId}
+									className={`interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
+									onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
+									onMouseEnter={() => onEnterPair(textsItemId)}
+									onMouseLeave={() => onLeavePair(textsItemId)}
+								>
+									{textsItem["text"]}
+								</button>
+							)
+						}
+					)}
 
-					{viewData.tables
-						.map((tableItem, idx) => {
-								const tableItemId = `${tableItem["self_ref"].split("/")[1] + tableItem["self_ref"].split("/")[2]}`;
-								const selectedTableItemId = tableItemId === 'tables0' ? 'texts21' : 'texts24';
+				{viewData.tables
+					.map((tableItem, idx) => {
+							const tableItemId = `${tableItem["self_ref"].split("/")[1] + tableItem["self_ref"].split("/")[2]}`;
+							const selectedTableItemId = tableItemId === 'tables0' ? 'texts21' : 'texts24';
 
-								return (
-									<table
-										key={`tableItem${idx}`}
-										id={tableItemId}
-										className={`interaction-item ${selectedId !== null && selectedId === tableItemId ? "active" : ""}`}
-										onClick={() => scrollToTextBox(`${selectedTableItemId}pdf` )}
-										onMouseEnter={() => setSelectedId( selectedTableItemId )}
-										onMouseLeave={() => setSelectedId(null)}
-									>
-										<thead>
-										<tr>
-											{tableItem["data"].grid[0].map((cell, idx, arr) => {
-												if (!cell || cell.row_span === 0 || cell.text === "") return null;
+							return (
+								<table
+									key={`tableItem${idx}`}
+									ref={(el) => (elRefs.current[tableItem] = el)}
+									id={tableItemId}
+									className={`interaction-item ${selectedId !== null && selectedId === tableItemId ? "active" : ""}`}
+									onClick={() => scrollToTextBox(`${selectedTableItemId}pdf`)}
+									onMouseEnter={() => onEnterPair(selectedTableItemId)}
+									onMouseLeave={() => onLeavePair(selectedTableItemId)}
+								>
+									<thead>
+									<tr>
+										{tableItem["data"].grid[0].map((cell, idx, arr) => {
+											if (!cell || cell.row_span === 0 || cell.text === "") return null;
 
-												if (
-													idx > 0 &&
-													cell.text === arr[idx - 1]?.text &&
-													(cell.row_span ?? 1) === 1 &&
-													(arr[idx - 1]?.row_span ?? 1) === 1
-												) {
-													return null;
+											if (
+												idx > 0 &&
+												cell.text === arr[idx - 1]?.text &&
+												(cell.row_span ?? 1) === 1 &&
+												(arr[idx - 1]?.row_span ?? 1) === 1
+											) {
+												return null;
+											}
+
+											return (
+												<th
+													key={`th-${idx}`}
+													rowSpan={cell.row_span > 1 ? cell.row_span : undefined}
+													colSpan={cell.col_span > 1 ? cell.col_span : undefined}
+													className={`text-center ${cell?.column_header ? "column-header" : ""}`}
+												>
+													{cell.text}
+												</th>
+											);
+										})}
+									</tr>
+									</thead>
+									<tbody>
+									{(() => {
+										const rendered = new Set<string>();
+
+										return tableItem["data"].grid
+											.filter((_, idx) => idx > 0)
+											.map((gridItem, rowIdx) => {
+												const rowCells = [];
+
+												for (let colIdx = 0; colIdx < gridItem.length; colIdx++) {
+													const cell = gridItem[colIdx];
+													if (!cell) continue;
+
+													const cellKey = `${rowIdx}-${colIdx}`;
+													if (rendered.has(cellKey)) continue;
+
+													const colSpan = cell.col_span ?? 1;
+													const rowSpan = cell.row_span ?? 1;
+
+													for (let r = rowIdx; r < rowIdx + rowSpan; r++) {
+														for (let c = colIdx; c < colIdx + colSpan; c++) {
+															rendered.add(`${r}-${c}`);
+														}
+													}
+
+													rowCells.push(
+														<td
+															key={`cell-${rowIdx}-${colIdx}`}
+															className={cell?.row_header ? "row-header" : ""}
+															colSpan={colSpan > 1 ? colSpan : undefined}
+															rowSpan={rowSpan > 1 ? rowSpan : undefined}
+														>
+															{cell.text}
+														</td>
+													);
 												}
 
 												return (
-													<th
-														key={`th-${idx}`}
-														rowSpan={cell.row_span > 1 ? cell.row_span : undefined}
-														colSpan={cell.col_span > 1 ? cell.col_span : undefined}
-														className={`text-center ${cell?.column_header ? "column-header" : ""}`}
+													<tr
+														key={`row-${rowIdx}`}
+														className="text-right"
 													>
-														{cell.text}
-													</th>
+														{rowCells}
+													</tr>
 												);
-											})}
-										</tr>
-										</thead>
-										<tbody>
-										{(() => {
-											const rendered = new Set<string>();
-
-											return tableItem["data"].grid
-												.filter((_, idx) => idx > 0)
-												.map((gridItem, rowIdx) => {
-													const rowCells = [];
-
-													for (let colIdx = 0; colIdx < gridItem.length; colIdx++) {
-														const cell = gridItem[colIdx];
-														if (!cell) continue;
-
-														const cellKey = `${rowIdx}-${colIdx}`;
-														if (rendered.has(cellKey)) continue;
-
-														const colSpan = cell.col_span ?? 1;
-														const rowSpan = cell.row_span ?? 1;
-
-														for (let r = rowIdx; r < rowIdx + rowSpan; r++) {
-															for (let c = colIdx; c < colIdx + colSpan; c++) {
-																rendered.add(`${r}-${c}`);
-															}
-														}
-
-														rowCells.push(
-															<td
-																key={`cell-${rowIdx}-${colIdx}`}
-																className={cell?.row_header ? "row-header" : ""}
-																colSpan={colSpan > 1 ? colSpan : undefined}
-																rowSpan={rowSpan > 1 ? rowSpan : undefined}
-															>
-																{cell.text}
-															</td>
-														);
-													}
-
-													return (
-														<tr
-															key={`row-${rowIdx}`}
-															className="text-right"
-														>
-															{rowCells}
-														</tr>
-													);
-												});
-										})()}
-										</tbody>
-									</table>
-								)
-							}
-						)}
+											});
+									})()}
+									</tbody>
+								</table>
+							)
+						}
+					)}
 			</article>
 		</section>
 	);

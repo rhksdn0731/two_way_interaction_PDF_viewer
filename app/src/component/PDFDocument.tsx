@@ -261,7 +261,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									ref={(el) => (elRefs.current[textsItemId] = el)}
 									type="button"
 									id={textsItemId}
-									className="relative interaction-item py-1"
+									className={`interaction-item py-1 py-1 ${textsItem['label']}`}
 									onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
 									onMouseEnter={() => onEnterPair(textsItemId)}
 									onMouseLeave={() => onLeavePair(textsItemId)}

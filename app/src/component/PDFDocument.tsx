@@ -119,7 +119,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 	const [pageNumber, setPageNumber] = useState(1);
 	const [selectedId, setSelectedId] = useState<string>(null);
 
-	const scrollToBox = (id) => {
+	const scrollToTextBox = (id) => {
 		const target = document.getElementById(id);
 		if (!target) return;
 		target.scrollIntoView({
@@ -128,7 +128,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 		});
 	};
 
-	const prependTextToTable = (targetId:string, appendTargetId:string)=> {
+	const prependTextToTable = (targetId: string, appendTargetId: string)=> {
 		const target = document.getElementById(targetId);
 		const prependTarget = document.getElementById(appendTargetId);
 
@@ -137,7 +137,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 		}
 	}
 
-	const prependButtonsToPictures = (buttonList, targetId) => {
+	const prependButtonsToPictures = (buttonList: string[], targetId: string) => {
 		const target = document.getElementById(targetId);
 
 		if (!target) {
@@ -145,16 +145,15 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 			return;
 		}
 
-		// 각 버튼을 #pictures1 요소에 prepend
 		buttonList.forEach(id => {
 			const buttonId = document.getElementById(id);
 			if (buttonId ) {
-				target.prepend(buttonId); // #pictures1 요소에 버튼을 prepend
+				target.prepend(buttonId);
 			}
 		});
 	}
 
-	const buttonList1 = [
+	const buttonList1: string[] = [
 		'texts29', 'texts30', 'texts31', 'texts32', 'texts33', 'texts34', 'texts35',
 		'texts36', 'texts37', 'texts38', 'texts39', 'texts40', 'texts42', 'texts43',
 		'texts44', 'texts45', 'texts46', 'texts47', 'texts48', 'texts49', 'texts50',
@@ -162,7 +161,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 		'texts64', 'texts65', 'texts66', 'texts67', 'texts68', 'pictures1'
 	];
 
-	const buttonList2 = [
+	const buttonList2: string[] = [
 		'texts57', 'texts58', 'texts59', 'texts60', 'texts63', 'texts64', 'texts65', 'texts66',
 		'texts67', 'texts68', 'texts69', 'texts70', 'texts72', 'texts73', 'texts74', 'texts75',
 		'texts76', 'texts77', 'texts78', 'texts79', 'texts80', 'texts82', 'texts83', 'texts84',
@@ -229,7 +228,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									`absolute interaction-nav-btn !text-xs white-pre text-left z-4 !p-2
 										${selectedId !== null && `${selectedId}pdf` === `${textsItemId}pdf` ? 'active' : ''}`
 								}
-								onClick={() => scrollToBox(`${textsItemId}`)}
+								onClick={() => scrollToTextBox(`${textsItemId}`)}
 								onMouseEnter={() => setSelectedId(`${textsItemId}`)}
 								onMouseLeave={() => setSelectedId(null)}
 							></button>
@@ -250,7 +249,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
 									id={textsItemId}
 									className={`relative interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
-									onClick={() => scrollToBox(`${textsItemId}pdf`)}
+									onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
 									onMouseEnter={() => setSelectedId(textsItemId)}
 									onMouseLeave={() => setSelectedId(null)}
 								>
@@ -271,7 +270,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 									key={`picturesItem${idx}`}
 									id={picturesId}
 									className={`interaction-item ${selectedId !== null && selectedId === picturesId ? 'selectedId !== null && selectedId ===' : ''}`}
-									onClick={() => scrollToBox( `${selectedPictureId}pdf` )}
+									onClick={() => scrollToTextBox( `${selectedPictureId}pdf` )}
 									onMouseEnter={() => setSelectedId( selectedPictureId )}
 									onMouseLeave={() => setSelectedId(null)}
 									src={picturesItem.image.uri}
@@ -295,7 +294,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 										key={`${textsItem["self_ref"].split("/")[2]}${idx}`}
 										id={textsItemId}
 										className={`interaction-item py-1 ${selectedId !== null && selectedId === textsItemId ? "active" : ""}  ${textsItem['label']}`}
-										onClick={() => scrollToBox(`${textsItemId}pdf`)}
+										onClick={() => scrollToTextBox(`${textsItemId}pdf`)}
 										onMouseEnter={() => setSelectedId(textsItemId)}
 										onMouseLeave={() => setSelectedId(null)}
 									>
@@ -315,7 +314,7 @@ const PDFDocument: React.FC<{ viewData: ViewData }> = React.memo(({ viewData }) 
 										key={`tableItem${idx}`}
 										id={tableItemId}
 										className={`interaction-item ${selectedId !== null && selectedId === tableItemId ? "active" : ""}`}
-										onClick={() => scrollToBox(`${selectedTableItemId}pdf` )}
+										onClick={() => scrollToTextBox(`${selectedTableItemId}pdf` )}
 										onMouseEnter={() => setSelectedId( selectedTableItemId )}
 										onMouseLeave={() => setSelectedId(null)}
 									>
